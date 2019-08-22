@@ -1,0 +1,42 @@
+kafka1:
+    image: confluentinc/cp-kafka:3.0.1
+    hostname: kafka1
+    external_links:
+        - zookeeper/zoo1:zoo1
+        - zookeeper/zoo2:zoo2
+        - zookeeper/zoo3:zoo3
+    environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zoo1:2181,zoo2:2181,zoo3:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
+    labels:
+        - "io.rancher.container.hostname_override=container_name"
+        - "io.rancher.scheduler.affinity:container_label_ne=io.rancher.stack.name=$${stack_name}"
+kafka2:
+    image: confluentinc/cp-kafka:3.0.1
+    hostname: kafka2
+    external_links:
+        - zookeeper/zoo1:zoo1
+        - zookeeper/zoo2:zoo2
+        - zookeeper/zoo3:zoo3
+    environment:
+        KAFKA_BROKER_ID: 2
+        KAFKA_ZOOKEEPER_CONNECT: zoo1:2181,zoo2:2181,zoo3:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
+    labels:
+        - "io.rancher.container.hostname_override=container_name"
+        - "io.rancher.scheduler.affinity:container_label_ne=io.rancher.stack.name=$${stack_name}"
+kafka3:
+    image: confluentinc/cp-kafka:3.0.1
+    hostname: kafka3
+    external_links:
+        - zookeeper/zoo1:zoo1
+        - zookeeper/zoo2:zoo2
+        - zookeeper/zoo3:zoo3
+    environment:
+        KAFKA_BROKER_ID: 3
+        KAFKA_ZOOKEEPER_CONNECT: zoo1:2181,zoo2:2181,zoo3:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
+    labels:
+        - "io.rancher.container.hostname_override=container_name"
+        - "io.rancher.scheduler.affinity:container_label_ne=io.rancher.stack.name=$${stack_name}"

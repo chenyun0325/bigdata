@@ -1,0 +1,254 @@
+version: "3"
+services:
+  namenode: 
+    image: bde2020/hadoop-namenode:1.1.0-hadoop2.7.1-java8
+    container_name: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./input_files:/input_files
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 50070:50070
+  
+  # resourcemanager:
+  #   image: bde2020/hadoop-resourcemanager:1.1.0-hadoop2.7.1-java8
+  #   container_name: resourcemanager
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # historyserver:
+  #   image: bde2020/hadoop-historyserver:1.1.0-hadoop2.7.1-java8
+  #   container_name: historyserver
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   volumes:
+  #     - hadoop_historyserver:/hadoop/yarn/timeline
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # nodemanager1:
+  #   image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.7.1-java8
+  #   container_name: nodemanager1
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  
+  datanode1:
+    image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+    container_name: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  # datanode2:
+  #   image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+  #   container_name: datanode2
+  #   depends_on:
+  #     - namenode
+  #   volumes:
+  #     - hadoop_datanode2:/hadoop/dfs/data
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # datanode3:
+  #   image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+  #   container_name: datanode3
+  #   depends_on:
+  #     - namenode
+  #   volumes:
+  #     - hadoop_datanode3:/hadoop/dfs/data
+  #   env_file:
+  #     - ./hadoop.env
+
+  master:
+    image: gettyimages/spark:2.4.3-hadoop-2.7
+    container_name: master
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h master
+    hostname: master
+    environment:
+      MASTER: spark://master:7077
+      SPARK_CONF_DIR: /conf
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      # hdfs服务
+      - namenode
+      # hive的元数据--spark集成hive
+      - hive-metastore
+      # spark连接pg
+      - postgres
+    expose:
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7077
+      - 6066
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+    volumes:
+      - ./conf/master:/conf
+      - ./data:/tmp/data
+      - ./jars:/root/jars
+
+  worker:
+    image: gettyimages/spark:2.4.3-hadoop-2.7
+    container_name: worker
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+    hostname: worker
+    environment:
+      SPARK_CONF_DIR: /conf
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - master
+      - hive-metastore
+      - postgres
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 8881
+    ports:
+      - 8081:8081
+    volumes:
+      - ./conf/worker:/conf
+      - ./data:/tmp/data
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    env_file:
+      - ./hadoop.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - 10000:10000
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    env_file:
+      - ./hadoop.env
+    command: /opt/hive/bin/hive --service metastore
+    depends_on:
+      - namenode
+    environment:
+      SERVICE_PRECONDITION: "postgres:5432"
+    ports:
+      - "9083:9083"
+
+  postgres:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    ports:
+      - "5432:5432" 
+    environment:
+      POSTGRES_USER: "airflow"
+      POSTGRES_PASSWORD: "airflow"
+      POSTGRES_DB: "airflow"
+      PGDATA: "/data"  
+    volumes:
+      - pg-data2:/data  
+  # presto-coordinator:
+  #   image: shawnzhu/prestodb:0.181
+  #   ports:
+  #     - "8087:8080"
+
+  redis:
+    image: 'redis:5.0.5'
+        # command: redis-server --requirepass redispass
+
+    # postgres:
+    #     image: postgres:9.6
+    #     environment:
+    #         - POSTGRES_USER=airflow
+    #         - POSTGRES_PASSWORD=airflow
+    #         - POSTGRES_DB=airflow
+        # Uncomment these lines to persist data on the local filesystem.
+        #     - PGDATA=/var/lib/postgresql/data/pgdata
+        # volumes:
+        #     - ./pgdata:/var/lib/postgresql/data/pgdata
+
+  webserver:
+        image: puckel/docker-airflow:1.10.4
+        depends_on:
+            - postgres
+            - redis
+        environment:
+            - LOAD_EX=n
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - EXECUTOR=Celery
+        volumes:
+            - ./dags:/usr/local/airflow/dags
+        ports:
+            - "8088:8080"
+        command: webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
+  flower:
+        image: puckel/docker-airflow:1.10.4
+        depends_on:
+            - redis
+        environment:
+            - EXECUTOR=Celery
+        ports:
+            - "5555:5555"
+        command: flower
+
+  scheduler:
+        image: puckel/docker-airflow:1.10.4
+        depends_on:
+            - webserver
+        volumes:
+            - ./dags:/usr/local/airflow/dags
+        environment:
+            - LOAD_EX=n
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - EXECUTOR=Celery
+        command: scheduler
+
+  worker_airflow:
+        image: puckel/docker-airflow:1.10.4
+        depends_on:
+            - scheduler
+        volumes:
+            - ./dags:/usr/local/airflow/dags
+        environment:
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - EXECUTOR=Celery
+        command: worker
+ 
+volumes:
+  hadoop_namenode:
+  hadoop_datanode1:
+  # hadoop_datanode2:
+  # hadoop_datanode3:
+  pg-data2:  
+  # hadoop_historyserver:
