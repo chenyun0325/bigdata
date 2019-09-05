@@ -1,0 +1,242 @@
+version: "3"
+services:
+  # db:
+  #   image: mysql:5.7.27
+  #   restart: always
+  #   container_name: mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: 123456
+  #   ports:
+  #     - 3307:3306
+  links: 
+    image: docker-links-fix:v1
+    container_name: bigdata-links
+    volumes:
+      - /Users/chenyun/program/wedatasphere-linkis-0.8.0-dist-spark2.2-2.4:/opt/links
+      - /Users/chenyun/program/wedatasphere-scriptis-0.6.0-dist:/opt/script
+      - ./conf/scriptis.conf:/etc/nginx/conf.d/scriptis.conf
+      - ./conf/sudoers:/etc/sudoers
+      - ./conf/.bashrc:/.bashrc
+      - ./conf/.bashrc:/root/.bashrc
+
+    # environment:
+    #   - CLUSTER_NAME=test
+    # env_file:
+    #   - ./hadoop.env
+    ports:
+      - 20303:20303
+      - 8080:8080
+    # networks:
+    #   - net1  
+    # depends_on:
+    #   - db 
+
+    # links:
+    #   # mysql
+    #   - db
+     
+  
+  # resourcemanager:
+  #   image: bde2020/hadoop-resourcemanager:1.1.0-hadoop2.7.1-java8
+  #   container_name: resourcemanager
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # historyserver:
+  #   image: bde2020/hadoop-historyserver:1.1.0-hadoop2.7.1-java8
+  #   container_name: historyserver
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   volumes:
+  #     - hadoop_historyserver:/hadoop/yarn/timeline
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # nodemanager1:
+  #   image: bde2020/hadoop-nodemanager:1.1.0-hadoop2.7.1-java8
+  #   container_name: nodemanager1
+  #   depends_on:
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # datanode1:
+  #   image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+  #   container_name: datanode1
+  #   depends_on:
+  #     - namenode
+  #   volumes:
+  #     - hadoop_datanode1:/hadoop/dfs/data
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # datanode2:
+  #   image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+  #   container_name: datanode2
+  #   depends_on:
+  #     - namenode
+  #   volumes:
+  #     - hadoop_datanode2:/hadoop/dfs/data
+  #   env_file:
+  #     - ./hadoop.env
+  
+  # datanode3:
+  #   image: bde2020/hadoop-datanode:1.1.0-hadoop2.7.1-java8
+  #   container_name: datanode3
+  #   depends_on:
+  #     - namenode
+  #   volumes:
+  #     - hadoop_datanode3:/hadoop/dfs/data
+  #   env_file:
+  #     - ./hadoop.env
+
+  # master:
+  #   image: gettyimages/spark:2.4.3-hadoop-2.7-ssh-python-jar
+  #   container_name: master
+  #   # 注意执行多条命令
+  #   command: sh -c  "/usr/sbin/sshd -D | bin/spark-class org.apache.spark.deploy.master.Master -h master"
+  #   hostname: master
+  #   environment:
+  #     MASTER: spark://master:7077
+  #     SPARK_CONF_DIR: /conf
+  #     SPARK_PUBLIC_DNS: localhost
+  #   links:
+  #     # hdfs服务
+  #     - namenode
+  #     # hive的元数据--spark集成hive
+  #     - hive-metastore
+  #     # spark连接pg
+  #     - postgres
+  #   expose:
+  #     - 7001
+  #     - 7002
+  #     - 7003
+  #     - 7004
+  #     - 7005
+  #     - 7077
+  #     - 6066
+  #   ports:
+  #     - 4040:4040
+  #     - 6066:6066
+  #     - 7077:7077
+  #     - 8080:8080
+  #   volumes:
+  #     - ./conf/master:/conf
+  #     - ./data:/tmp/data
+  #     - ./jars:/root/jars
+  #     - ./etl:/opt/etl/alchemists
+  #     - ./conf/sshKeyConf:/root/.ssh
+  # worker:
+  #   image: gettyimages/spark:2.4.3-hadoop-2.7-ssh-python-jar
+  #   container_name: worker
+  #   command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://master:7077
+  #   hostname: worker
+  #   environment:
+  #     SPARK_CONF_DIR: /conf
+  #     SPARK_WORKER_CORES: 2
+  #     SPARK_WORKER_MEMORY: 3g
+  #     SPARK_WORKER_PORT: 8881
+  #     SPARK_WORKER_WEBUI_PORT: 8081
+  #     SPARK_PUBLIC_DNS: localhost
+  #   links:
+  #     - namenode
+  #     - master
+  #     - hive-metastore
+  #     - postgres
+  #   expose:
+  #     - 7012
+  #     - 7013
+  #     - 7014
+  #     - 7015
+  #     - 8881
+  #   ports:
+  #     - 8081:8081
+  #   volumes:
+  #     - ./conf/worker:/conf
+  #     - ./data:/tmp/data
+
+  # hive-server:
+  #   image: bde2020/hive:2.3.2-postgresql-metastore
+  #   container_name: hive-server
+  #   env_file:
+  #     - ./hadoop.env
+  #   environment:
+  #     HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+  #     SERVICE_PRECONDITION: "hive-metastore:9083"
+  #   ports:
+  #     - 10000:10000
+
+  # hive-metastore:
+  #   image: bde2020/hive:2.3.2-postgresql-metastore
+  #   restart: always
+  #   container_name: hive-metastore
+  #   env_file:
+  #     - ./hadoop.env
+  #   command: /opt/hive/bin/hive --service metastore
+  #   depends_on:
+  #     - namenode
+  #   environment:
+  #     SERVICE_PRECONDITION: "postgres:5432"
+  #   ports:
+  #     - "9083:9083"
+
+  # postgres:
+  #   image: bde2020/hive-metastore-postgresql:2.3.0
+  #   ports:
+  #     - "5432:5432" 
+  #   environment:
+  #     POSTGRES_USER: "airflow"
+  #     POSTGRES_PASSWORD: "airflow"
+  #     POSTGRES_DB: "airflow"
+  #     PGDATA: "/data"  
+  #   volumes:
+  #     - pg-data3:/data  
+  # presto-coordinator:
+  #   image: shawnzhu/prestodb:0.181
+  #   ports:
+  #     - "8087:8080"
+
+  # webserver:
+  #       image: puckel/docker-airflow:1.10.4-ssh-fix
+
+  #       hostname: airflow
+
+  #       depends_on:
+  #           - postgres
+  #       environment:
+  #           - LOAD_EX=n
+  #           - EXECUTOR=Local
+  #           - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+
+  #       volumes:
+  #           # - ./dags:/usr/local/airflow/dags
+  #           - ./etl/src/alchemists/airflow/dags:/usr/local/airflow/dags
+  #           - ./etl:/opt/etl/alchemists
+  #           # Uncomment to include custom plugins
+  #           # - ./plugins:/usr/local/airflow/plugins
+  #       ports:
+  #           - "8088:8080"
+  #       command: webserver
+  #       healthcheck:
+  #           test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+  #           interval: 30s
+  #           timeout: 30s
+  #           retries: 3
+  # networks:
+  #  net1:
+  #   driver: host
+# volumes:
+  # hadoop_namenode:
+  # hadoop_datanode1:
+  # # hadoop_datanode2:
+  # # hadoop_datanode3:
+  # pg-data3:  
+  # hadoop_historyserver:

@@ -1,0 +1,14 @@
+docker run --rm -e USER=root -e USER_ID=root -p 127.0.0.1:9083:9083 -p 127.0.0.1:4040:4040 -p 127.0.0.1:10000:10000 docker-links
+
+/opt/bigdatalinksx/eureka/bin/start-eureka.sh
+/opt/bigdatalinksx/linkis-gateway/bin/start-gateway.sh
+/opt/bigdatalinksx/linkis-publicservice/bin/start-publicservice.sh
+/opt/bigdatalinksx/linkis-metadata/bin/start-database.sh
+/opt/bigdatalinksx/linkis-resourcemanager/bin/start-resourcemanager.sh
+/opt/bigdatalinksx/linkis-ujes-spark-entrance/bin/start-sparkentrance.sh
+/opt/bigdatalinksx/linkis-ujes-spark-enginemanager/bin/start-sparkenginemanager.sh
+/opt/bigdatalinksx/linkis-ujes-hive-entrance/bin/start-hiveentrance.sh
+/opt/bigdatalinksx/linkis-ujes-hive-enginemanager/bin/start-hiveenginemanager.sh
+
+
+docker commit 68ae74b226c8 docker-links-fix:v1
