@@ -94,6 +94,8 @@ services:
       - hive-metastore
       # spark连接pg
       - postgres
+      # 运行历史查看
+      - historyserver
     # expose:
     #   - 7001
     #   - 7002
